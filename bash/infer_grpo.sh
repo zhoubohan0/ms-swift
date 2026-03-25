@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
+# GRPO 训练完成后，在 val.jsonl 上批量推理（vLLM + LoRA merge）。
+# 将 GRPO_CKPT 改为实际 run 目录下的 checkpoint-*（内含 adapter_config.json）。
 
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [-d dataset_name] [-c ckpt_dir] [-b infer_backend] [-g gpu_id] [-o out_jsonl]"
+  echo "Usage: $0 [-d dataset_name] [-c ckpt_dir] [-g gpu_id] [-b infer_backend] [-o out_jsonl]"
 }
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 REPO_ROOT=$(dirname "$SCRIPT_DIR")
 
-dataset_name="stage_20260325"
-CKPT_DIR="${REPO_ROOT}/outputs/stage_20260325_sft/v1-20260324-224944/checkpoint-30"
-infer_backend="transformers"
-gpu_id="1"
+dataset_name="cloth_debug"
+gpu_id="0"
+infer_backend="vllm"
+GRPO_CKPT="${REPO_ROOT}/outputs/cloth_debug_grpo/v0-REPLACE_ME/checkpoint-REPLACE_ME"
 out_jsonl=""
 
-while getopts ":d:c:b:g:o:h" opt; do
+while getopts ":d:c:g:b:o:h" opt; do
   case "$opt" in
     d) dataset_name="$OPTARG" ;;
-    c) CKPT_DIR="$OPTARG" ;;
-    b) infer_backend="$OPTARG" ;;
+    c) GRPO_CKPT="$OPTARG" ;;
     g) gpu_id="$OPTARG" ;;
+    b) infer_backend="$OPTARG" ;;
     o) out_jsonl="$OPTARG" ;;
     h)
       usage
@@ -39,17 +41,16 @@ while getopts ":d:c:b:g:o:h" opt; do
   esac
 done
 
-DATASET_DIR="${REPO_ROOT}/datasets/processed/${dataset_name}"
-VAL_JSONL="${DATASET_DIR}/val.jsonl"
-OUT_JSONL="${out_jsonl:-$(dirname "${CKPT_DIR}")/eval.jsonl}"
+VAL_JSONL="${REPO_ROOT}/datasets/processed/${dataset_name}/val.jsonl"
+OUT_JSONL="${out_jsonl:-$(dirname "${GRPO_CKPT}")/eval_grpo.jsonl}"
 
 if [[ ! -f "${VAL_JSONL}" ]]; then
   echo "Validation dataset not found: ${VAL_JSONL}" >&2
   exit 1
 fi
 
-if [[ ! -d "${CKPT_DIR}" ]]; then
-  echo "Checkpoint directory not found: ${CKPT_DIR}" >&2
+if [[ ! -d "${GRPO_CKPT}" ]]; then
+  echo "Checkpoint directory not found: ${GRPO_CKPT}" >&2
   exit 1
 fi
 
@@ -59,7 +60,7 @@ VIDEO_MAX_PIXELS=50176 \
 FPS_MAX_FRAMES=12 \
 swift infer \
   --merge_lora true \
-  --adapters "${CKPT_DIR}" \
+  --adapters "${GRPO_CKPT}" \
   --load_data_args false \
   --val_dataset "${VAL_JSONL}" \
   --template qwen3_vl \
@@ -71,6 +72,3 @@ swift infer \
   --temperature 0 \
   --max_new_tokens 2048 \
   --result_path "${OUT_JSONL}"
-
-# 说明：checkpoint 的 args.json 里 val_dataset 常为 []，--load_data_args true 会覆盖 CLI 的--val_dataset 并进入交互模式，故此处用 load_data_args false 并手动对齐 template/max_length。
-# 交互式 LoRA+vLLM 示例：--adapters .../checkpoint-3 --merge_lora true --infer_backend vllm --stream true

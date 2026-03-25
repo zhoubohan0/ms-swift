@@ -1,6 +1,12 @@
+## data processing
+bash bash/make_dataset.sh -d stage_20260325
+
 ## SFT
 ```bash
-SWIFT_DEBUG_BP=1 bash bash/run_sft.sh
+export ckpt_dir=outputs/stage_20260325_sft/v1-20260324-224944/checkpoint-30
+bash bash/train_sft.sh -d stage_20260325 -g 0
+bash bash/infer_sft.sh -d stage_20260325 -b transformers -g 1 -c $ckpt_dir
+bash bash/eval_sft.sh -c $ckpt_dir
 ```
 
 核心代码片段
