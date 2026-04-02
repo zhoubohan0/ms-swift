@@ -173,11 +173,7 @@ def main() -> None:
     parser.add_argument(
         "--ckpt",
         type=Path,
-        default=REPO_ROOT
-        / "outputs"
-        / "stage_20260325_sft"
-        / "v2-20260325-213558"
-        / "checkpoint-950",
+        default="/mnt/nas/zbh/__backup/REPO/ms-swift/outputs/stage_20260330_sft/v0-20260331-111104/checkpoint-1700",
         help="LoRA adapter 目录，或 merged 完整权重目录；若传入 adapter 且存在同名 *-merged 则自动用 merged",
     )
     args = parser.parse_args()

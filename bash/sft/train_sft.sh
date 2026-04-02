@@ -8,7 +8,7 @@ usage() {
 }
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-REPO_ROOT=$(dirname "$SCRIPT_DIR")
+REPO_ROOT=$(dirname "$(dirname "$SCRIPT_DIR")")
 
 dataset_name="stage_20260325"
 gpu_id="0"

@@ -7,7 +7,7 @@ usage() {
 }
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-REPO_ROOT=$(dirname "$SCRIPT_DIR")
+REPO_ROOT=$(dirname "$(dirname "$SCRIPT_DIR")")
 
 dataset_name="stage_20260325"
 CKPT_DIR="${REPO_ROOT}/outputs/stage_20260325_sft/v1-20260324-224944/checkpoint-30"
@@ -41,7 +41,7 @@ done
 
 DATASET_DIR="${REPO_ROOT}/datasets/processed/${dataset_name}"
 VAL_JSONL="${DATASET_DIR}/val.jsonl"
-OUT_JSONL="${out_jsonl:-$(dirname "${CKPT_DIR}")/eval.jsonl}"
+OUT_JSONL="${out_jsonl:-"${CKPT_DIR}-eval_${dataset_name}.jsonl"}"
 
 if [[ ! -f "${VAL_JSONL}" ]]; then
   echo "Validation dataset not found: ${VAL_JSONL}" >&2

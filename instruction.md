@@ -1,12 +1,15 @@
 ## data processing
-bash bash/make_dataset.sh -d stage_20260325
+```bash
+export dataset_path=stage_20260330
+bash bash/make_dataset.sh -d $dataset_path -t 0.95
+```
 
 ## SFT
 ```bash
 export ckpt_dir=outputs/stage_20260325_sft/v1-20260324-224944/checkpoint-30
-bash bash/train_sft.sh -d stage_20260325 -g 0
-bash bash/infer_sft.sh -d stage_20260325 -b transformers -g 1 -c $ckpt_dir
-bash bash/eval_sft.sh -c $ckpt_dir
+bash bash/sft/train_sft.sh -d $dataset_path -g 0
+bash bash/sft/infer_sft.sh -d $dataset_path -b transformers -g 1 -c $ckpt_dir
+bash bash/sft/eval_sft.sh -j $ckpt_dir-eval_${dataset_name}.jsonl
 ```
 
 核心代码片段

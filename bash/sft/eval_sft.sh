@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
 # 对 ms-swift 推理输出的 infer_*.jsonl：按 response vs labels 各字段输出 classification_report。
-# 用法: ./eval.sh [eval.jsonl]
-#       ./eval.sh -j /path/to/eval.jsonl [-o report.txt]
+# 用法: ./eval.sh -j /path/to/eval.jsonl [-o report.txt]
 
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
-REPO_ROOT=$(dirname "$SCRIPT_DIR")
-
+REPO_ROOT=$(dirname "$(dirname "$SCRIPT_DIR")")
 
 usage() {
-  echo "Usage: $0 [-c ckpt_dir]"
-  echo "       $0 [ckpt_dir]   # 兼容：唯一参数视为 ckpt_dir"
+  echo "Usage: $0 [-j jsonl_file]"
+  echo "       $0 [jsonl_file]   # 兼容：唯一参数视为 jsonl_file"
 }
 
-CKPT_DIR=""
-while getopts ":c:h" opt; do
+JSONL=""
+while getopts ":j:h" opt; do
   case "$opt" in
-    c) CKPT_DIR="$OPTARG" ;;
+    j) JSONL="$OPTARG" ;;
     h)
       usage
       exit 0
@@ -36,24 +34,15 @@ while getopts ":c:h" opt; do
 done
 shift $((OPTIND - 1)) || true
 if [[ $# -ge 1 ]]; then
-  CKPT_DIR="$1"
+  JSONL="$1"
 fi
-
-if [[ -z "$CKPT_DIR" ]]; then
-  echo "Missing ckpt_dir: use -c DIR or pass DIR as the first argument." >&2
-  usage >&2
-  exit 1
-fi
-
-RUN_DIR=$(dirname "$CKPT_DIR")
-JSONL="${RUN_DIR}/eval.jsonl"
-OUT_FILE="${RUN_DIR}/eval.txt"
 
 if [[ ! -f "$JSONL" ]]; then
   echo "File not found: $JSONL" >&2
   exit 1
 fi
 
+OUT_FILE="${JSONL%.jsonl}.txt"
 run_py() {
   python3 - "$JSONL" <<'PY'
 import json
