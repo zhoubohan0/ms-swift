@@ -1,15 +1,15 @@
 ## data processing
 ```bash
-export dataset_path=stage_20260330
-bash bash/make_dataset.sh -d $dataset_path -t 0.95
+export dataset_path=real_20260401
+bash bash/make_dataset.sh -d $dataset_path -t 0. -a ZBH_collar_bbox_all.json
 ```
 
 ## SFT
 ```bash
-export ckpt_dir=outputs/stage_20260325_sft/v1-20260324-224944/checkpoint-30
+export ckpt_dir=outputs/stage_20260330_sft/v0-20260331-111104/checkpoint-1700
 bash bash/sft/train_sft.sh -d $dataset_path -g 0
 bash bash/sft/infer_sft.sh -d $dataset_path -b transformers -g 1 -c $ckpt_dir
-bash bash/sft/eval_sft.sh -j $ckpt_dir-eval_${dataset_name}.jsonl
+bash bash/sft/eval_sft.sh -j $ckpt_dir-eval_${dataset_path}.jsonl
 ```
 
 核心代码片段
