@@ -6,16 +6,9 @@ ms-swift to predict the detailed folding stage (1-6).
 """
 from __future__ import annotations
 
-import argparse
-import importlib.util
-import json
-import os, sys
-import socket
-import struct
-import traceback
-from io import BytesIO
+import os
+import sys
 from pathlib import Path
-from typing import Any
 
 # ---------------------------------------------------------------------------
 # Configurable defaults (override via CLI args or env vars)
@@ -26,7 +19,32 @@ DEFAULT_CKPT = str(
     Path("/mnt/nas/zbh/__backup/REPO/ms-swift/outputs")
     / "stage_20260330_sft" / "v0-20260331-111104" / "checkpoint-1700"
 )
-DEFAULT_CUDA_DEVICE = "1"
+DEFAULT_CUDA_DEVICE = "0"
+
+
+def _apply_cuda_visible_devices_early() -> None:
+    """Set CUDA before importing swift (which loads torch). Honors ``--cuda`` / ``--cuda=`` over env."""
+    for i, a in enumerate(sys.argv):
+        if a == "--cuda" and i + 1 < len(sys.argv):
+            os.environ["CUDA_VISIBLE_DEVICES"] = sys.argv[i + 1].strip()
+            return
+        if a.startswith("--cuda="):
+            os.environ["CUDA_VISIBLE_DEVICES"] = a.split("=", 1)[1].strip()
+            return
+    if "CUDA_VISIBLE_DEVICES" not in os.environ:
+        os.environ["CUDA_VISIBLE_DEVICES"] = DEFAULT_CUDA_DEVICE
+
+
+_apply_cuda_visible_devices_early()
+
+import argparse
+import importlib.util
+import json
+import socket
+import struct
+import traceback
+from io import BytesIO
+from typing import Any
 
 # swift inference parameters
 SWIFT_MAX_PIXELS = "1003520"
@@ -192,10 +210,11 @@ def main() -> None:
     parser.add_argument("--host", default=HOST)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--ckpt", type=str, default=DEFAULT_CKPT)
-    parser.add_argument("--cuda", type=str, default=DEFAULT_CUDA_DEVICE)
+    parser.add_argument("--cuda", type=str, default=os.environ.get("CUDA_VISIBLE_DEVICES", DEFAULT_CUDA_DEVICE))
     args = parser.parse_args()
+    # Keep env in sync if something only reads ``args`` later; early init already set CVD for torch.
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda).strip()
 
-    os.environ.setdefault("CUDA_VISIBLE_DEVICES", args.cuda)
     os.environ.setdefault("MAX_PIXELS", SWIFT_MAX_PIXELS)
     os.environ.setdefault("VIDEO_MAX_PIXELS", SWIFT_VIDEO_MAX_PIXELS)
 
